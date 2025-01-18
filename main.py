@@ -1,0 +1,122 @@
+from fastapi import FastAPI, HTTPException, Query, Request
+from models import Evento, TokenData
+from database import eventos_collection, log_collection
+from schemas import evento_schema, eventos_schema
+from bson import ObjectId
+from fastapi.middleware.cors import CORSMiddleware
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+from google.oauth2 import id_token
+from google.auth.transport import requests
+
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Cambia "*" por ["http://localhost:3000"] en producción
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["Cross-Origin-Opener-Policy", "Cross-Origin-Embedder-Policy"],
+)
+load_dotenv()
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+    return response
+
+
+@app.post("/auth/verify")
+async def verify_token(data: TokenData):
+    try:
+        # Verificar el token con Google
+        idinfo = id_token.verify_oauth2_token(
+            data.idToken, requests.Request(), GOOGLE_CLIENT_ID
+        )
+
+        # Extraer la información del usuario
+        email = idinfo.get("email")
+        name = idinfo.get("name")
+
+        expiration = idinfo.get("exp")  # Timestamp de expiración del token
+
+        # Guardar la información en el log
+        log_collection.insert_one({
+            "timestamp": datetime.utcnow(),  # Fecha y hora del login
+            "user": email,                   # Usuario que inició sesión
+            "expiration": expiration,        # Expiración del token (timestamp)
+            "token": data.idToken,           # Token de identificación
+        })
+
+        return {"email": email, "name": name}
+
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Token inválido")
+    
+@app.get("/logs")
+async def get_logs():
+    logs = log_collection.find().sort("timestamp", -1)  # Ordenar por timestamp descendente
+    return [
+        {
+            "timestamp": log["timestamp"],
+            "user": log["user"],
+            "expiration": log["expiration"],
+            "token": log["token"],
+        }
+        for log in logs
+    ]
+
+@app.get("/")
+async def obtener_eventos(lat: float = Query(...), lon: float = Query(...)):
+    proximos_eventos = eventos_collection.find({
+        "$expr": {
+            "$lt": [{
+                "$sqrt": {
+                    "$add": [
+                        {"$pow": [{"$subtract": ["$lat", lat]}, 2]},
+                        {"$pow": [{"$subtract": ["$lon", lon]}, 2]}
+                    ]
+                }
+            }, 0.2]
+        }
+    }).sort("timestamp", 1)
+
+    return eventos_schema(proximos_eventos)
+
+
+@app.get("/eventos/{evento_id}")
+async def obtener_evento(evento_id: str):
+    """Obtener detalles de un evento por ID."""
+    evento = eventos_collection.find_one({"_id": ObjectId(evento_id)})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return evento_schema(evento)
+
+@app.post("/eventos")
+async def crear_evento(evento: Evento):
+    """Crear un nuevo evento."""
+    nuevo_evento = evento.dict()
+    resultado = eventos_collection.insert_one(nuevo_evento)
+    return {"id": str(resultado.inserted_id)}
+
+@app.put("/eventos/{evento_id}")
+async def actualizar_evento(evento_id: str, evento: Evento):
+    """Actualizar un evento existente."""
+    resultado = eventos_collection.update_one({"_id": ObjectId(evento_id)}, {"$set": evento.dict()})
+    if resultado.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return {"mensaje": "Evento actualizado exitosamente"}
+
+@app.delete("/eventos/{evento_id}")
+async def borrar_evento(evento_id: str):
+    """Eliminar un evento."""
+    resultado = eventos_collection.delete_one({"_id": ObjectId(evento_id)})
+    if resultado.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Evento no encontrado")
+    return {"mensaje": "Evento eliminado exitosamente"}
