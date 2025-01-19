@@ -92,3 +92,8 @@ async def borrar_evento(evento_id: str):
     if resultado.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Evento no encontrado")
     return {"mensaje": "Evento eliminado exitosamente"}
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))  # Usar el puerto proporcionado por Railway
+    uvicorn.run(app, host="0.0.0.0", port=port)
