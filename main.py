@@ -42,7 +42,7 @@ async def get_logs():
 
 @app.get("/")
 async def obtener_eventos(lat: float = Query(...), lon: float = Query(...)):
-    proximos_eventos = eventos_collection.find({
+    proximos_eventos = list(eventos_collection.find({
         "$expr": {
             "$lt": [{
                 "$sqrt": {
@@ -53,9 +53,13 @@ async def obtener_eventos(lat: float = Query(...), lon: float = Query(...)):
                 }
             }, 0.2]
         }
-    }).sort("timestamp", 1)
+    }).sort("timestamp", 1))
+
+    if not proximos_eventos:
+        return {"message": "No se encontraron eventos cercanos."}
 
     return eventos_schema(proximos_eventos)
+
 
 @app.get("/eventos")
 async def obtener_eventos():
