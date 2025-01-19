@@ -4,7 +4,6 @@ from database import eventos_collection, log_collection
 from schemas import evento_schema, eventos_schema
 from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
-import os
 
 
 
@@ -98,8 +97,3 @@ async def borrar_evento(evento_id: str):
 async def favicon():
     return {"message": "No favicon provided"}
 
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 8000))  # Usar el puerto proporcionado por Railway
-    uvicorn.run(app, host="0.0.0.0", port=port)
