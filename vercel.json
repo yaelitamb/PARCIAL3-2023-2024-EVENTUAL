@@ -2,18 +2,15 @@
     "version": 2,
     "builds": [
       {
-        "src": "next.config.js",
-        "use": "@vercel/next"
+        "src": "main.py",
+        "use": "@vercel/python"
       }
     ],
-    "env": {
-    
-      "NEXT_PUBLIC_API_URL": "http://127.0.0.1:8000",
-      "MONGO_URI": "mongodb+srv://yaelmartin:yaelmartin@cluster0.ziao0.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-      "NEXT_PUBLIC_GOOGLE_API_KEY": "AIzaSyBfA4lFDA5JTG3FIWv09lABP1cv3mmMYro",
-      "NEXT_PUBLIC_GOOGLE_CLIENT_ID": "279629039564-5lq96kv6rostelu0veqohl4ienkb9rlu.apps.googleusercontent.com",
-      "NEXT_PUBLIC_GOOGLE_CLIENT_SECRET": "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",
-      "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME": "dwd4kcbyq",
-      "NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET": "examen"
-    }
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "main.py"
+      }
+    ]
   }
+  
