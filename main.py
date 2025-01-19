@@ -4,6 +4,7 @@ from database import eventos_collection, log_collection
 from schemas import evento_schema, eventos_schema
 from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 
 
