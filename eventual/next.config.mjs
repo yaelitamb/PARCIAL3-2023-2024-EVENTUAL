@@ -1,13 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    experimental: {
-      // Elimina 'appDir' si está presente
-    },
-    reactStrictMode: true, // Si no está, inclúyelo
-    swcMinify: true,       // Si no está, inclúyelo
+    reactStrictMode: true, // Esto está bien
     eslint: {
-        ignoreDuringBuilds: true, // Ignora ESLint durante la construcción
-      }
+      ignoreDuringBuilds: true, // Ignorar ESLint durante el build
+    },
   };
   
   export default nextConfig;
