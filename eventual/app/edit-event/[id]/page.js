@@ -3,9 +3,6 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-export async function generateStaticParams() {
-  return []; // Deja vacío si no hay prerenderización para IDs dinámicos
-}
 
 export default function EditEvent({ params }) {
   const [form, setForm] = useState({

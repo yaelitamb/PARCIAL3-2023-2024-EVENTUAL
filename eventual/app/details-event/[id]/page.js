@@ -3,10 +3,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
-export async function generateStaticParams() {
-  return []; // Deja vacío si no hay prerenderización para IDs dinámicos
-}
-
 export default function EventDetails({ params }) {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
