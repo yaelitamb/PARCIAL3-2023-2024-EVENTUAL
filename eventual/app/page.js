@@ -1,15 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [events, setEvents] = useState([]);
-  const [address, setAddress] = useState(""); // Dirección introducida por el usuario
-  const [lat, setLat] = useState(37.02); // Coordenadas predeterminadas
-  const [lon, setLon] = useState(-4.33); // Coordenadas predeterminadas
+  const [address, setAddress] = useState("");
+  const [lat, setLat] = useState(37.02);
+  const [lon, setLon] = useState(-4.33);
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
+  const router = useRouter();
 
   const fetchCoordinates = async () => {
     try {
@@ -31,7 +32,7 @@ export default function Home() {
       const location = response.data.results[0].geometry.location;
       setLat(location.lat);
       setLon(location.lng);
-      fetchEvents(location.lat, location.lng); // Llama a fetchEvents con las nuevas coordenadas
+      fetchEvents(location.lat, location.lng);
     } catch (error) {
       console.error("Error al convertir dirección a coordenadas:", error.message);
       alert("Error al convertir dirección a coordenadas.");
@@ -53,117 +54,128 @@ export default function Home() {
     }
   };
 
-  const handleLoginSuccess = async (credentialResponse) => {
-    console.log("Google Credential Response:", credentialResponse);
+  const handleCreateEvent = () => {
+    // Redirige a una página para crear un nuevo evento
+    router.push("/create-event");
+  };
 
-    try {
-      const response = await axios.post("http://localhost:8000/auth/verify", {
-        idToken: credentialResponse.credential,
-        
-      });
-      console.log("ID Token:", credentialResponse.credential);
+  const handleEditEvent = (id) => {
+    // Redirige a una página para editar el evento seleccionado
+    router.push(`/edit-event/${id}`);
+  };
 
-      console.log("Backend response:", response.data);
-    } catch (error) {
-      console.error("Error verifying token with backend:", error.message);
+  const handleDeleteEvent = async (id) => {
+    if (confirm("¿Estás seguro de que deseas borrar este evento?")) {
+      try {
+        await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/eventos/${id}`);
+        alert("Evento eliminado correctamente.");
+        fetchEvents();
+      } catch (error) {
+        console.error("Error al borrar el evento:", error.message);
+        alert("No se pudo borrar el evento.");
+      }
     }
   };
 
-  const handleLoginError = () => {
-    console.error("Login Failed");
+  const handleViewDetails = (id) => {
+    router.push(`/details-event/${id}`);
   };
-
-  const fetchLogs = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/logs`);
-      setLogs(response.data);
-    } catch (error) {
-      console.error("Error al obtener los logs:", error.message);
-      alert("Error al obtener los logs. Por favor, inténtelo más tarde.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  
+  
 
   return (
-    <div style={{ padding: "20px" }}>
-      <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
-      <div>
-        <h1>Iniciar Sesión con Google</h1>
-        <GoogleLogin
-          onSuccess={handleLoginSuccess}
-          onError={handleLoginError}
+    <div className="p-8 bg-gray-100 min-h-screen">
+      <h1 className="text-4xl font-bold text-center mb-8">Eventos Próximos</h1>
+      <div className="flex justify-center mb-8">
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+          placeholder="Introduce una dirección"
+          className="border rounded-lg p-2 mr-4 w-1/3"
         />
-      </div>
-    </GoogleOAuthProvider>
-      <h1>Eventos Próximos</h1>
-      <div>
-        <label>
-          Dirección:
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Introduce una dirección"
-            style={{ marginLeft: "10px", marginRight: "20px", width: "300px" }}
-          />
-        </label>
-        <button onClick={fetchCoordinates}>Buscar por dirección</button>
+        <button
+          onClick={fetchCoordinates}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+        >
+          Buscar por dirección
+        </button>
       </div>
 
-      <div style={{ marginTop: "20px" }}>
-        <label>
-          Latitud:
+      <div className="flex justify-center mb-8">
+        <div className="mr-4">
+          <label className="block text-gray-700">Latitud:</label>
           <input
             type="number"
             value={lat}
             onChange={(e) => setLat(e.target.value)}
-            style={{ marginLeft: "10px", marginRight: "20px" }}
+            className="border rounded-lg p-2 w-full"
           />
-        </label>
-        <label>
-          Longitud:
+        </div>
+        <div>
+          <label className="block text-gray-700">Longitud:</label>
           <input
             type="number"
             value={lon}
             onChange={(e) => setLon(e.target.value)}
-            style={{ marginLeft: "10px", marginRight: "20px" }}
+            className="border rounded-lg p-2 w-full"
           />
-        </label>
-        <button onClick={() => fetchEvents(lat, lon)}>Buscar por coordenadas</button>
+        </div>
+        <button
+          onClick={() => fetchEvents(lat, lon)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 ml-4 mt-6"
+        >
+          Buscar por coordenadas
+        </button>
       </div>
 
-      {loading && <p>Cargando eventos...</p>}
+      <div className="text-center mb-8">
+        <button
+          onClick={handleCreateEvent}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+        >
+          Crear Evento
+        </button>
+      </div>
 
-      <ul style={{ marginTop: "20px" }}>
+      {loading && <p className="text-center text-lg">Cargando eventos...</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map((event) => (
-          <li key={event.id}>
-            <h3>{event.nombre}</h3>
-            <p>Organizador: {event.organizador}</p>
-            <p>Fecha y hora: {new Date(event.timestamp).toLocaleString()}</p>
-          </li>
+          <div
+            key={event.id}
+            className="border rounded-lg p-4 shadow-lg bg-white"
+          >
+            <h3 className="text-xl font-bold mb-2">{event.nombre}</h3>
+            <p className="text-gray-600 mb-2">
+              Organizador: {event.organizador}
+            </p>
+            <p className="text-gray-600 mb-4">
+              Fecha y hora: {new Date(event.timestamp).toLocaleString()}
+            </p>
+            <div className="flex justify-between">
+              <button
+                onClick={() => handleViewDetails(event.id)}
+                className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700"
+              >
+                Ver detalles
+              </button>
+              <button
+                onClick={() => handleEditEvent(event.id)}
+                className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600"
+              >
+                Editar
+              </button>
+              <button
+                onClick={() => handleDeleteEvent(event.id)}
+                className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700"
+              >
+                Borrar
+              </button>
+            </div>
+          </div>
         ))}
-      </ul>
-      <button onClick={fetchLogs} style={{ margin: "20px", padding: "10px 20px" }}>
-        Ver Logs de Sesión
-      </button>
-
-      {loading && <p>Cargando logs...</p>}
-
-      {/* Mostrar los logs */}
-      <ul>
-        {logs.map((log, index) => (
-          <li key={index}>
-            <p><strong>Usuario:</strong> {log.user}</p>
-            <p><strong>Fecha y hora:</strong> {new Date(log.timestamp).toLocaleString()}</p>
-            <p><strong>Expiración:</strong> {new Date(log.expiration * 1000).toLocaleString()}</p>
-            <p><strong>Token:</strong> {log.token}</p>
-            <hr />
-          </li>
-        ))}
-      </ul>
+      </div>
     </div>
   );
 }

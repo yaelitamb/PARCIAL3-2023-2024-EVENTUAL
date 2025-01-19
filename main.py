@@ -1,14 +1,11 @@
-from fastapi import FastAPI, HTTPException, Query, Request
-from models import Evento, TokenData
+from fastapi import FastAPI, HTTPException, Query
+from models import Evento
 from database import eventos_collection, log_collection
 from schemas import evento_schema, eventos_schema
 from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from datetime import datetime
-from dotenv import load_dotenv
-from google.oauth2 import id_token
-from google.auth.transport import requests
+
+
 
 
 app = FastAPI()
@@ -21,8 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Cross-Origin-Opener-Policy", "Cross-Origin-Embedder-Policy"],
 )
-load_dotenv()
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+
 
 @app.middleware("http")
 async def add_security_headers(request, call_next):
@@ -30,34 +26,6 @@ async def add_security_headers(request, call_next):
     response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
     response.headers["Cross-Origin-Embedder-Policy"] = "require-corp"
     return response
-
-
-@app.post("/auth/verify")
-async def verify_token(data: TokenData):
-    try:
-        # Verificar el token con Google
-        idinfo = id_token.verify_oauth2_token(
-            data.idToken, requests.Request(), GOOGLE_CLIENT_ID
-        )
-
-        # Extraer la información del usuario
-        email = idinfo.get("email")
-        name = idinfo.get("name")
-
-        expiration = idinfo.get("exp")  # Timestamp de expiración del token
-
-        # Guardar la información en el log
-        log_collection.insert_one({
-            "timestamp": datetime.utcnow(),  # Fecha y hora del login
-            "user": email,                   # Usuario que inició sesión
-            "expiration": expiration,        # Expiración del token (timestamp)
-            "token": data.idToken,           # Token de identificación
-        })
-
-        return {"email": email, "name": name}
-
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Token inválido")
     
 @app.get("/logs")
 async def get_logs():
@@ -89,6 +57,10 @@ async def obtener_eventos(lat: float = Query(...), lon: float = Query(...)):
 
     return eventos_schema(proximos_eventos)
 
+@app.get("/eventos")
+async def obtener_eventos():
+    eventos = eventos_collection.find()
+    return [evento_schema(evento) for evento in eventos]
 
 @app.get("/eventos/{evento_id}")
 async def obtener_evento(evento_id: str):
