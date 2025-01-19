@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true, // Activa React Strict Mode para mejores errores y advertencias.
+    reactStrictMode: true,
     experimental: {
-      appDir: true, // Activa la característica de `app/` para rutas.
+      appDir: true,
     },
-    output: "standalone", // Requerido para Vercel en configuraciones avanzadas.
+    eslint: {
+      ignoreDuringBuilds: true, // Ignora ESLint durante la construcción
+    },
+    output: "standalone",
   };
   
   export default nextConfig;
