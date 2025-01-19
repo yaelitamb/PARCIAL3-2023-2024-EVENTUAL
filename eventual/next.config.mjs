@@ -1,8 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true, // Esto está bien
+    reactStrictMode: true,
+    swcMinify: true,
     eslint: {
-      ignoreDuringBuilds: true, // Ignorar ESLint durante el build
+      ignoreDuringBuilds: true, // Ignora ESLint en build
+    },
+    experimental: {
+      appDir: true, // Para usar la estructura `app`
+    },
+    async redirects() {
+      return [
+        {
+          source: "/",
+          destination: "/home",
+          permanent: true,
+        },
+      ];
     },
   };
   

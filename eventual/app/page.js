@@ -6,7 +6,10 @@ import dynamic from "next/dynamic";
 
 const DynamicMap = dynamic(() => import("./MapComponent"), { ssr: false });
 
-
+useEffect(() => {
+  console.log("Página principal cargada");
+  console.log("Backend URL:", process.env.NEXT_PUBLIC_API_URL);
+}, []);
 
 export default function Home() {
   const [events, setEvents] = useState([]);
